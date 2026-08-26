@@ -1,0 +1,71 @@
+/* 日本地図を上下スワイプで開閉するパネル */
+
+.panel {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.collapse {
+  overflow: hidden;
+  transition: height 0.28s ease;
+}
+
+.body {
+  padding: 1rem 1rem 0.5rem;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.handle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.5rem 0 0.6rem;
+  border: none;
+  background: none;
+  cursor: grab;
+  /* 上下スワイプを地図側やスクロールに渡さず、この要素で受け取る */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+/* 見た目は細いバーのまま、指で押せる範囲は 44px 以上にする */
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: max(100%, 44px);
+  transform: translateY(-50%);
+}
+
+.grabber {
+  display: block;
+  width: 44px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  transition: background 0.15s;
+}
+
+.handle:hover .grabber,
+.handle:active .grabber {
+  background: var(--primary);
+}
+
+/* ── デスクトップ ── */
+@media (min-width: 1024px) {
+  /* 全幅のバーは content 側（max-width + 1rem の内側余白）と左端を揃える */
+  .body {
+    padding-inline: max(1.25rem, calc((100% - var(--max-w)) / 2 + 1rem));
+  }
+}

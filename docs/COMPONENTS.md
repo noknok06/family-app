@@ -25,9 +25,9 @@
 | `EmptyState` | 空データ時の「アイコン＋一言＋主アクション」 | ShoppingPage ほか |
 | `Toast` | 画面下部の一時通知（失敗通知・任意アクション） | ShoppingPage ほか |
 | `OfflineBanner` | オフライン時の上部バナー（アプリ全体で 1 つ） | `App.jsx` |
-| `JapanMap` | 日本地図（都道府県 SVG）。訪問済み都道府県のハイライトとタップ選択、ピンチ / ホイール / ボタンでの拡大縮小とドラッグ移動 | TravelPage |
+| `JapanMap` | 日本地図（都道府県 SVG）。訪問済み都道府県のハイライトとタップ選択、ピンチ / ホイール / ボタンでの拡大縮小とドラッグ移動。`onZoomedChange` で拡大状態を外へ伝える | TravelPage |
 | `schedule/*` | 予定表の画面部品（月 / 週 / アジェンダ・各モーダル） | SchedulePage |
-| `travel/*` | 旅行の画面部品（詳細モーダル・行程リスト・準備リスト・各フォーム） | TravelPage |
+| `travel/*` | 旅行の画面部品（詳細モーダル・行程リスト・準備リスト・各フォーム・地図パネル） | TravelPage |
 | `places/PlaceDetailModal` | お出かけリストの場所詳細（読み取り専用）。地図 / Web検索 / 訪問記録 / 編集への導線 | PlacesPage |
 | `AddToShoppingListModal` | 他アプリから買い物リストへ品物を送る | PricePage / DishesPage |
 | `VideoEmbed` | 動画（YouTube / TikTok）のサムネイル表示と、その場での埋め込み再生。再生状態は親が持つ | DishesPage |
