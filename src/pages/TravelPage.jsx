@@ -10,7 +10,7 @@ import BottomNav from '../components/BottomNav'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorNotice from '../components/ErrorNotice'
 import Toast from '../components/Toast'
-import JapanMap from '../components/JapanMap'
+import MapPanel from '../components/travel/MapPanel'
 import TripDetailModal from '../components/travel/TripDetailModal'
 import TripFormModal from '../components/travel/TripFormModal'
 import ActivityFormModal from '../components/travel/ActivityFormModal'
@@ -385,14 +385,14 @@ export default function TravelPage() {
         </div>
       )}
 
-      {trips.length > 0 && showMap && (
-        <div className={styles.mapSection}>
-          <JapanMap
-            visited={visitedPrefectures}
-            selected={prefectureFilter === 'all' ? null : prefectureFilter}
-            onSelect={pref => setPrefectureFilter(pref ?? 'all')}
-          />
-        </div>
+      {trips.length > 0 && (
+        <MapPanel
+          visited={visitedPrefectures}
+          selected={prefectureFilter === 'all' ? null : prefectureFilter}
+          onSelect={pref => setPrefectureFilter(pref ?? 'all')}
+          open={showMap}
+          onOpenChange={setShowMap}
+        />
       )}
 
       <main className={styles.main}>

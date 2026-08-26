@@ -112,17 +112,6 @@
   border-color: var(--primary);
 }
 
-/* ── Map Section ── */
-.mapSection {
-  padding: 1rem 1rem 0.5rem;
-  background: var(--glass);
-  backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--glass-border);
-  flex-shrink: 0;
-  max-height: 52vh;
-  overflow-y: auto;
-}
-
 /* ── Main ── */
 .main {
   flex: 1;
@@ -304,8 +293,7 @@
 @media (min-width: 1024px) {
   /* 全幅のバーは content 側（max-width + 1rem の内側余白）と左端を揃える */
   .header,
-  .filterBar,
-  .mapSection {
+  .filterBar {
     padding-inline: max(1.25rem, calc((100% - var(--max-w)) / 2 + 1rem));
   }
 

@@ -36,8 +36,11 @@ function clampView(view, fit) {
  * 日本地図（都道府県 SVG）。訪問済みのハイライトとタップ選択に加え、
  * ピンチ / ホイール / ボタンで拡大縮小し、拡大中はドラッグで移動できる。
  * 拡大は viewBox の操作なのでページ全体の表示倍率には影響しない。
+ *
+ * onZoomedChange: 拡大状態が変わったときに呼ばれる。拡大中はドラッグを地図の
+ * 移動に使うため、外側でスワイプ操作を止めたい場合に使う（任意）。
  */
-export default function JapanMap({ visited, selected, onSelect }) {
+export default function JapanMap({ visited, selected, onSelect, onZoomedChange }) {
   const [fit, setFit] = useState(BASE_VIEW)
   const [view, setView] = useState(BASE_VIEW)
   const svgRef = useRef(null)
@@ -52,6 +55,10 @@ export default function JapanMap({ visited, selected, onSelect }) {
   zoomedRef.current = zoomed
   const fitRef = useRef(fit)
   fitRef.current = fit
+
+  useEffect(() => {
+    onZoomedChange?.(zoomed)
+  }, [zoomed, onZoomedChange])
 
   /** 実際に描かれている範囲。viewBox には上下に余白があり、そのままでは地図が小さくなる */
   function contentBox() {
