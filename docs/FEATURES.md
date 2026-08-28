@@ -15,7 +15,7 @@
 | `/dishes` | DishesPage 食べたいおかず | 必要 | dish_categories, dishes |
 | `/schedule` | SchedulePage 予定表 | 必要 | schedule_events, schedule_event_history, schedule_event_comments, schedule_event_reactions |
 | `/inventory` | InventoryPage 在庫管理 | 必要 | inventory_items |
-| `/travels` | TravelPage 旅行計画・記録 | 必要 | travel_trips, travel_activities, travel_prep_items |
+| `/travels` | TravelPage 旅行計画・記録 | 必要 | travel_trips, travel_activities, travel_prep_items, wish_places（行程の地図リンク用に参照） |
 
 ## 機能概要
 
@@ -92,6 +92,7 @@
   - 概要: 計画情報の一覧と、予算に対する行程費用の合計・残り（超過時は赤字表示）、参加人数で割った 1 人あたり予算・費用
   - 準備: 持ち物 / やること のチェックリスト（担当者付き・進捗メーター）。`travel_prep_items`
   - 行程: 日ごとに区切ったスケジュール（時刻・場所・費用・メモ）。当日はチェックで実行済みにできる
+- 行程の「場所」がお出かけリスト（`wish_places`）の場所名と一致すると、その行に「地図」ボタンが出て Google マップを開ける（座標があれば座標、なければ住所・場所名で検索）。一致判定は全角/半角・大小文字・空白の違いを無視する。行程フォームの場所欄はお出かけリストの場所名を入力候補として出し、一致しているかをその場で表示する
 - 行程の並び替え（`travel/ItineraryList`）: ハンドルのドラッグで日をまたいで移動でき、ドロップ位置は線で表示。長い行程では画面端で自動スクロール。ハンドルにフォーカスして ↑↓ キーでも移動できる（キーボード操作・スクリーンリーダー対応）
 - 日本地図（`JapanMap` コンポーネント）で、記録済みの都道府県をハイライト表示。地図上の都道府県タップで一覧を絞り込み（都道府県セレクトと相互連動）。地図データはビルド時に生成した静的 SVG パス（`src/data/japanPrefecturePaths.js`）で、外部の地図 API・従量課金サービスは使用しない
 - 地図はピンチ / Ctrl+ホイール / ＋−ボタンで拡大縮小でき、拡大中はドラッグで移動できる（`viewBox` の操作なのでページ全体の表示倍率は変わらない）。等倍のときは地図の上でもページを縦スクロールできる

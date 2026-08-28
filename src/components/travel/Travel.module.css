@@ -313,6 +313,29 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* お出かけリストに登録済みの場所。地図を開けることが分かるよう色を変える */
+.itemPlaceLinked { color: var(--primary); }
+
+.itemMapBtn {
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.itemMapBtn:active { background: var(--border); }
+
 /* ドロップ位置の線。レイアウトを動かさないよう高さを持たせない */
 .dropLine {
   height: 0;
