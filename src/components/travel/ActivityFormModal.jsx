@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Modal from '../Modal'
-import { shortDate } from '../../lib/travel'
+import { buildPlaceIndex, findWishPlace, shortDate } from '../../lib/travel'
 import styles from './Travel.module.css'
 
 /**
@@ -10,11 +10,12 @@ import styles from './Travel.module.css'
  *   activity   : 編集対象（新規は null）
  *   dayDates   : 旅行期間の日付配列。index が day_index に対応する
  *   defaultDay : 新規追加時の初期 day_index
+ *   wishPlaces : お出かけリストの場所。名前をそろえると行程から地図を開けるので候補として出す
  *   onSave     : (payload) => Promise
  *   onDelete   : 削除（編集時のみ表示）
  *   onClose    : 閉じる
  */
-export default function ActivityFormModal({ activity, dayDates, defaultDay = 0, onSave, onDelete, onClose }) {
+export default function ActivityFormModal({ activity, dayDates, defaultDay = 0, wishPlaces, onSave, onDelete, onClose }) {
   const isEdit = !!activity
   // 日程を縮めた後などに範囲外の日が残っていても、選択肢のある日に寄せる
   const initialDay = Math.min(Math.max(activity?.day_index ?? defaultDay, 0), Math.max(dayDates.length - 1, 0))
@@ -28,6 +29,10 @@ export default function ActivityFormModal({ activity, dayDates, defaultDay = 0, 
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const placeListId = useId()
+  const placeIndex = useMemo(() => buildPlaceIndex(wishPlaces), [wishPlaces])
+  const matchedPlace = findWishPlace(placeIndex, form.place)
 
   function update(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -103,7 +108,19 @@ export default function ActivityFormModal({ activity, dayDates, defaultDay = 0, 
           placeholder="例：横浜中華街"
           value={form.place}
           onChange={e => update('place', e.target.value)}
+          list={placeListId}
+          aria-describedby={`${placeListId}-hint`}
         />
+        <datalist id={placeListId}>
+          {[...placeIndex.values()].map(place => (
+            <option key={place.id} value={place.name} />
+          ))}
+        </datalist>
+        <p className={styles.hint} id={`${placeListId}-hint`}>
+          {matchedPlace
+            ? `お出かけリストの「${matchedPlace.name}」と一致しています。行程から地図を開けます`
+            : 'お出かけリストと同じ場所名にすると、行程から地図を開けます'}
+        </p>
 
         <label className={styles.label} htmlFor="act-cost">費用（任意・円）</label>
         <input

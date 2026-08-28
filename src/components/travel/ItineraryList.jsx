@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconAdd, IconCheck, IconDrag, IconPin } from '../../lib/icons'
-import { shortDate, formatYen } from '../../lib/travel'
+import { mapsUrl } from '../../lib/schedule'
+import { shortDate, formatYen, findWishPlace, placeMapQuery } from '../../lib/travel'
 import styles from './Travel.module.css'
 
 /** ドラッグ中に端でスクロールさせるため、実際にスクロールする祖先を探す */
@@ -27,8 +28,10 @@ const EDGE = 60
  *   onEdit       : (activity) => void
  *   onToggleDone : (activity) => void
  *   onReorder    : (changedRows) => void。day_index / order_index が変わった行のみ
+ *   placeIndex   : お出かけリストの索引（lib/travel の buildPlaceIndex）。
+ *                  行程の「場所」と一致する場所があれば地図リンクを出す
  */
-export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onToggleDone, onReorder }) {
+export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onToggleDone, onReorder, placeIndex }) {
   const [drag, setDrag] = useState(null)
   const rootRef = useRef(null)
   const rowRefs = useRef(new Map())
@@ -212,61 +215,81 @@ export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onT
               {items.length === 0 && !dropping && (
                 <li className={styles.dayEmpty}>まだ予定がありません</li>
               )}
-              {items.map((activity, index) => (
-                <Fragment key={activity.id}>
-                  {dropBeforeId === activity.id && <li className={styles.dropLine} aria-hidden="true" />}
-                  <li
-                    ref={el => { if (el) rowRefs.current.set(activity.id, el); else rowRefs.current.delete(activity.id) }}
-                    className={[
-                      styles.item,
-                      activity.done ? styles.itemDone : '',
-                      drag?.id === activity.id ? styles.itemDragging : '',
-                    ].filter(Boolean).join(' ')}
-                  >
-                    <button
-                      type="button"
-                      className={styles.handle}
-                      ref={el => { if (el) handleRefs.current.set(activity.id, el); else handleRefs.current.delete(activity.id) }}
-                      aria-label={`${activity.title} の並び順を変更（上下キーで移動）`}
-                      onPointerDown={e => startDrag(e, activity, day, index)}
-                      onPointerMove={moveDrag}
-                      onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
-                      onKeyDown={e => handleKeyDown(e, activity, day, index)}
+              {items.map((activity, index) => {
+                const wishPlace = findWishPlace(placeIndex, activity.place)
+                return (
+                  <Fragment key={activity.id}>
+                    {dropBeforeId === activity.id && <li className={styles.dropLine} aria-hidden="true" />}
+                    <li
+                      ref={el => { if (el) rowRefs.current.set(activity.id, el); else rowRefs.current.delete(activity.id) }}
+                      className={[
+                        styles.item,
+                        activity.done ? styles.itemDone : '',
+                        drag?.id === activity.id ? styles.itemDragging : '',
+                      ].filter(Boolean).join(' ')}
                     >
-                      <IconDrag />
-                    </button>
+                      <button
+                        type="button"
+                        className={styles.handle}
+                        ref={el => { if (el) handleRefs.current.set(activity.id, el); else handleRefs.current.delete(activity.id) }}
+                        aria-label={`${activity.title} の並び順を変更（上下キーで移動）`}
+                        onPointerDown={e => startDrag(e, activity, day, index)}
+                        onPointerMove={moveDrag}
+                        onPointerUp={endDrag}
+                        onPointerCancel={endDrag}
+                        onKeyDown={e => handleKeyDown(e, activity, day, index)}
+                      >
+                        <IconDrag />
+                      </button>
 
-                    <button
-                      type="button"
-                      className={styles.doneBtn}
-                      aria-pressed={!!activity.done}
-                      aria-label={activity.done ? `${activity.title} を未完了に戻す` : `${activity.title} を完了にする`}
-                      onClick={() => onToggleDone(activity)}
-                    >
-                      <IconCheck />
-                    </button>
+                      <button
+                        type="button"
+                        className={styles.doneBtn}
+                        aria-pressed={!!activity.done}
+                        aria-label={activity.done ? `${activity.title} を未完了に戻す` : `${activity.title} を完了にする`}
+                        onClick={() => onToggleDone(activity)}
+                      >
+                        <IconCheck />
+                      </button>
 
-                    <button type="button" className={styles.itemMain} onClick={() => onEdit(activity)}>
-                      <span className={styles.itemTitleRow}>
-                        {activity.start_time && (
-                          <span className={styles.itemTime}>{activity.start_time.slice(0, 5)}</span>
-                        )}
-                        <span className={styles.itemTitle}>{activity.title}</span>
-                      </span>
-                      {(activity.place || activity.cost != null || activity.memo) && (
-                        <span className={styles.itemSub}>
-                          {activity.place && <span><IconPin /> {activity.place}</span>}
-                          {activity.cost != null && (
-                            <span className={styles.itemCost}>{formatYen(activity.cost)}</span>
+                      <button type="button" className={styles.itemMain} onClick={() => onEdit(activity)}>
+                        <span className={styles.itemTitleRow}>
+                          {activity.start_time && (
+                            <span className={styles.itemTime}>{activity.start_time.slice(0, 5)}</span>
                           )}
-                          {activity.memo && <span>{activity.memo}</span>}
+                          <span className={styles.itemTitle}>{activity.title}</span>
                         </span>
+                        {(activity.place || activity.cost != null || activity.memo) && (
+                          <span className={styles.itemSub}>
+                            {activity.place && (
+                              <span className={wishPlace ? styles.itemPlaceLinked : ''}>
+                                <IconPin /> {activity.place}
+                              </span>
+                            )}
+                            {activity.cost != null && (
+                              <span className={styles.itemCost}>{formatYen(activity.cost)}</span>
+                            )}
+                            {activity.memo && <span>{activity.memo}</span>}
+                          </span>
+                        )}
+                      </button>
+
+                      {wishPlace && (
+                        <a
+                          className={styles.itemMapBtn}
+                          href={mapsUrl(placeMapQuery(wishPlace))}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Google マップで開く"
+                          aria-label={`${wishPlace.name} を Google マップで開く`}
+                        >
+                          <IconPin /> 地図
+                        </a>
                       )}
-                    </button>
-                  </li>
-                </Fragment>
-              ))}
+                    </li>
+                  </Fragment>
+                )
+              })}
               {dropping && dropBeforeId === null && <li className={styles.dropLine} aria-hidden="true" />}
             </ul>
 

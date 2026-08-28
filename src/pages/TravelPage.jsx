@@ -14,7 +14,7 @@ import MapPanel from '../components/travel/MapPanel'
 import TripDetailModal from '../components/travel/TripDetailModal'
 import TripFormModal from '../components/travel/TripFormModal'
 import ActivityFormModal from '../components/travel/ActivityFormModal'
-import { PHASES, PREFECTURES, shortDate, tripDates, tripPhase } from '../lib/travel'
+import { PHASES, PREFECTURES, buildPlaceIndex, shortDate, tripDates, tripPhase } from '../lib/travel'
 import styles from './TravelPage.module.css'
 
 /** upsert で送る列。取得した行をそのまま返すと不要な列まで書き戻すため明示する */
@@ -63,7 +63,7 @@ export default function TravelPage() {
   const [toast, setToast] = useState(null)
 
   const {
-    data: { trips, activitiesMap, prepMap, members },
+    data: { trips, activitiesMap, prepMap, members, wishPlaces },
     loading,
     error: loadError,
     refetch: fetchTrips,
@@ -71,7 +71,7 @@ export default function TravelPage() {
     setData,
   } = useFamilyData(
     async familyId => {
-      const [trips, members] = await Promise.all([
+      const [trips, members, wishPlaces] = await Promise.all([
         unwrap(
           supabase.from('travel_trips').select('*').eq('family_id', familyId).order('start_date', { ascending: false })
         ),
@@ -79,6 +79,12 @@ export default function TravelPage() {
         unwrap(
           supabase.from('family_members').select('id, name').eq('family_id', familyId).order('joined_at')
         ),
+        // 行程の「場所」と突き合わせて地図リンクを出すための付随データ。
+        // 取得できなくても旅行そのものは表示したいので、失敗は握って空扱いにする
+        unwrap(
+          supabase.from('wish_places').select('id, name, address, lat, lng')
+            .eq('family_id', familyId).order('created_at')
+        ).catch(err => { console.error('お出かけリストの取得エラー:', err); return [] }),
       ])
       const tripIds = trips.map(t => t.id)
       // 旅行ごとに問い合わせず、行程と準備リストは 1 クエリずつでまとめて取得する
@@ -99,13 +105,16 @@ export default function TravelPage() {
       for (const activity of activities) activitiesMap[activity.trip_id]?.push(activity)
       const prepMap = Object.fromEntries(tripIds.map(id => [id, []]))
       for (const item of prepItems) prepMap[item.trip_id]?.push(item)
-      return { trips, activitiesMap, prepMap, members }
+      return { trips, activitiesMap, prepMap, members, wishPlaces }
     },
-    ['travel_trips', 'travel_activities', 'travel_prep_items', 'family_members'],
-    { trips: [], activitiesMap: {}, prepMap: {}, members: [] },
+    ['travel_trips', 'travel_activities', 'travel_prep_items', 'family_members', 'wish_places'],
+    { trips: [], activitiesMap: {}, prepMap: {}, members: [], wishPlaces: [] },
   )
 
   const selectedTrip = trips.find(t => t.id === selectedTripId) ?? null
+
+  // 行程の「場所」からお出かけリストの行を引くための索引
+  const placeIndex = useMemo(() => buildPlaceIndex(wishPlaces), [wishPlaces])
 
   const visitedPrefectures = useMemo(
     () => new Set(trips.map(t => t.prefecture).filter(Boolean)),
@@ -438,6 +447,7 @@ export default function TravelPage() {
           activities={(activitiesMap[selectedTrip.id] ?? []).slice().sort(byItinerary)}
           prepItems={prepMap[selectedTrip.id] ?? []}
           members={members}
+          placeIndex={placeIndex}
           onAddActivity={day => setActivityForm({ activity: null, defaultDay: day })}
           onEditActivity={activity => setActivityForm({ activity, defaultDay: activity.day_index ?? 0 })}
           onToggleActivityDone={toggleActivityDone}
@@ -456,6 +466,7 @@ export default function TravelPage() {
           activity={activityForm.activity}
           dayDates={tripDates(selectedTrip.start_date, selectedTrip.end_date)}
           defaultDay={activityForm.defaultDay}
+          wishPlaces={wishPlaces}
           onSave={saveActivity}
           onDelete={activityForm.activity ? () => deleteActivity(activityForm.activity) : undefined}
           onClose={() => setActivityForm(null)}

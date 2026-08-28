@@ -111,3 +111,34 @@ export function formatYen(value) {
   if (value == null || value === '' || !Number.isFinite(n)) return ''
   return `¥${Math.round(n).toLocaleString('ja-JP')}`
 }
+
+/**
+ * お出かけリスト（wish_places）と突き合わせるためのキー。
+ * 全角/半角・大文字小文字・空白の違いは同じ場所として扱う。
+ */
+export function placeKey(text) {
+  if (!text) return ''
+  return String(text).normalize('NFKC').toLowerCase().replace(/\s+/g, '')
+}
+
+/** 場所名 → お出かけリストの行。同名が複数あれば最初の 1 件を使う */
+export function buildPlaceIndex(places) {
+  const index = new Map()
+  for (const place of places ?? []) {
+    const key = placeKey(place.name)
+    if (key && !index.has(key)) index.set(key, place)
+  }
+  return index
+}
+
+/** 行程の「場所」と一致するお出かけリストの行（なければ null） */
+export function findWishPlace(index, text) {
+  if (!index || !text) return null
+  return index.get(placeKey(text)) ?? null
+}
+
+/** お出かけリストの行を地図で開くときの検索クエリ。座標があれば最優先 */
+export function placeMapQuery(place) {
+  if (place.lat != null && place.lng != null) return `${place.lat},${place.lng}`
+  return place.address || place.name
+}

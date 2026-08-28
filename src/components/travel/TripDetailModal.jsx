@@ -22,6 +22,7 @@ export default function TripDetailModal({
   activities,
   prepItems,
   members,
+  placeIndex,
   onAddActivity,
   onEditActivity,
   onToggleActivityDone,
@@ -222,6 +223,7 @@ export default function TripDetailModal({
             onEdit={onEditActivity}
             onToggleDone={onToggleActivityDone}
             onReorder={onReorderActivities}
+            placeIndex={placeIndex}
           />
         )}
         </div>
