@@ -77,7 +77,7 @@ export default function ActivityFormModal({ activity, dayDates, defaultDay = 0, 
               ))}
             </select>
           </div>
-          <div>
+          <div className={styles.fieldTime}>
             <label className={styles.label} htmlFor="act-time">時刻（任意）</label>
             <input
               id="act-time"

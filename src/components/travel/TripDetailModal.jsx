@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Modal from '../Modal'
 import ItineraryList from './ItineraryList'
 import PrepList from './PrepList'
@@ -34,8 +34,20 @@ export default function TripDetailModal({
   onDelete,
   onClose,
 }) {
-  const [tab, setTab] = useState('overview')
+  // 旅行中は当日の行程がいちばん見たい情報なので、そのタブから開く
+  const [tab, setTab] = useState(() => (tripPhase(trip) === 'ongoing' ? 'plan' : 'overview'))
   const tabId = useId()
+
+  // タブバーも sticky にするため、日ごとの見出しに「ヘッダー + タブバー」の高さを渡す
+  const tabBarRef = useRef(null)
+  const [tabBarHeight, setTabBarHeight] = useState(0)
+  useEffect(() => {
+    const el = tabBarRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setTabBarHeight(el.offsetHeight))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   const dayDates = useMemo(() => tripDates(trip.start_date, trip.end_date), [trip.start_date, trip.end_date])
   const spent = activities.reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
@@ -62,7 +74,7 @@ export default function TripDetailModal({
 
   return (
     <Modal open onClose={onClose} title={trip.title} variant="sheet" size="lg">
-      <div className={styles.body}>
+      <div className={styles.body} style={{ '--tabbar-h': `${tabBarHeight}px` }}>
         <div className={styles.summary}>
           <div className={styles.summaryDate}>{dateRange(trip.start_date, trip.end_date)}</div>
           <div className={styles.summaryMeta}>
@@ -73,27 +85,29 @@ export default function TripDetailModal({
           </div>
         </div>
 
-        <div className={styles.tabs} role="tablist">
-          {TABS.map(item => (
-            <button
-              key={item.key}
-              type="button"
-              role="tab"
-              id={`${tabId}-${item.key}`}
-              aria-selected={tab === item.key}
-              aria-controls={`${tabId}-panel`}
-              className={`${styles.tab} ${tab === item.key ? styles.tabActive : ''}`}
-              onClick={() => setTab(item.key)}
-            >
-              {item.label}
-              {item.key === 'prep' && prepItems.length > 0 && (
-                <span className={styles.tabBadge}>{donePrep}/{prepItems.length}</span>
-              )}
-              {item.key === 'plan' && activities.length > 0 && (
-                <span className={styles.tabBadge}>{doneActivities}/{activities.length}</span>
-              )}
-            </button>
-          ))}
+        <div className={styles.tabBar} ref={tabBarRef}>
+          <div className={styles.tabs} role="tablist">
+            {TABS.map(item => (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                id={`${tabId}-${item.key}`}
+                aria-selected={tab === item.key}
+                aria-controls={`${tabId}-panel`}
+                className={`${styles.tab} ${tab === item.key ? styles.tabActive : ''}`}
+                onClick={() => setTab(item.key)}
+              >
+                {item.label}
+                {item.key === 'prep' && prepItems.length > 0 && (
+                  <span className={styles.tabBadge}>{donePrep}/{prepItems.length}</span>
+                )}
+                {item.key === 'plan' && activities.length > 0 && (
+                  <span className={styles.tabBadge}>{doneActivities}/{activities.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${tab}`} className={styles.panel}>
@@ -209,6 +223,7 @@ export default function TripDetailModal({
         {tab === 'prep' && (
           <PrepList
             items={prepItems}
+            members={members}
             onAdd={onAddPrep}
             onToggle={onTogglePrep}
             onDelete={onDeletePrep}

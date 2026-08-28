@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconAdd, IconCheck, IconDrag, IconPin } from '../../lib/icons'
 import { mapsUrl } from '../../lib/schedule'
-import { shortDate, formatYen, findWishPlace, placeMapQuery } from '../../lib/travel'
+import { shortDate, formatYen, findWishPlace, placeMapQuery, todayStr } from '../../lib/travel'
 import styles from './Travel.module.css'
 
 /** ドラッグ中に端でスクロールさせるため、実際にスクロールする祖先を探す */
@@ -42,6 +42,15 @@ export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onT
   const rafRef = useRef(0)
   const scrollDyRef = useRef(0)
   const refocusRef = useRef(null)
+  const todayRef = useRef(null)
+
+  // 旅行中に開いたときは今日の行程がすぐ見えるところまで送る（初日ならそのまま）
+  const todayIndex = dayDates.indexOf(todayStr())
+  useEffect(() => {
+    if (todayIndex > 0) todayRef.current?.scrollIntoView({ block: 'start' })
+    // 開いた直後の 1 回だけ。以降のスクロール位置は利用者に任せる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const grouped = useMemo(() => {
     const byDay = dayDates.map(() => [])
@@ -186,9 +195,11 @@ export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onT
 
   return (
     <div ref={rootRef}>
-      <p className={styles.hint}>
-        並び替えはハンドルをドラッグ、またはハンドルを選んで ↑↓ キー。日をまたいだ移動もできます
-      </p>
+      {activities.length > 1 && (
+        <p className={styles.hint}>
+          ハンドルをドラッグすると並び替えられます（日をまたいだ移動も可）
+        </p>
+      )}
 
       {dayDates.map((date, day) => {
         const items = grouped[day]
@@ -197,14 +208,22 @@ export default function ItineraryList({ dayDates, activities, onAdd, onEdit, onT
         const remaining = dropping ? items.filter(a => a.id !== drag.id) : items
         const dropBeforeId = dropping ? (remaining[drag.index]?.id ?? null) : undefined
 
+        const isToday = day === todayIndex
+
         return (
           <section
             key={date}
-            className={`${styles.dayBlock} ${dropping ? styles.dayBlockActive : ''}`}
+            ref={isToday ? todayRef : undefined}
+            className={[
+              styles.dayBlock,
+              dropping ? styles.dayBlockActive : '',
+              isToday ? styles.dayBlockToday : '',
+            ].filter(Boolean).join(' ')}
           >
             <div className={styles.dayHead}>
               <span className={styles.dayLabel}>{day + 1}日目</span>
               <span className={styles.dayDate}>{shortDate(date)}</span>
+              {isToday && <span className={styles.todayBadge}>今日</span>}
               {dayCost > 0 && <span className={styles.dayCost}>{formatYen(dayCost)}</span>}
             </div>
 
