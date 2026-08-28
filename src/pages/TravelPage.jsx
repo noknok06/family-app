@@ -14,7 +14,7 @@ import MapPanel from '../components/travel/MapPanel'
 import TripDetailModal from '../components/travel/TripDetailModal'
 import TripFormModal from '../components/travel/TripFormModal'
 import ActivityFormModal from '../components/travel/ActivityFormModal'
-import { PHASES, PREFECTURES, buildPlaceIndex, shortDate, tripDates, tripPhase } from '../lib/travel'
+import { PHASES, PREFECTURES, buildPlaceIndex, daysUntil, shortDate, todayStr, tripDates, tripPhase } from '../lib/travel'
 import styles from './TravelPage.module.css'
 
 /** upsert で送る列。取得した行をそのまま返すと不要な列まで書き戻すため明示する */
@@ -355,7 +355,35 @@ export default function TravelPage() {
       console.error('準備項目の削除エラー:', error)
       notifyFailure('削除できませんでした。通信環境を確認してください。')
       await fetchTrips()
+      return
     }
+
+    // 誤タップで消えたときのために、同じ内容を書き戻せる導線を残す
+    setToast({
+      message: `「${item.title}」を削除しました`,
+      actionLabel: '元に戻す',
+      onAction: () => restorePrepItem(item),
+    })
+  }
+
+  /** 削除した準備項目を元の id・並び順のまま書き戻す */
+  async function restorePrepItem(item) {
+    setToast(null)
+    const { error } = await supabase.from('travel_prep_items').insert({
+      id: item.id,
+      trip_id: item.trip_id,
+      family_id: item.family_id,
+      category: item.category,
+      title: item.title,
+      assignee: item.assignee ?? null,
+      done: !!item.done,
+      order_index: item.order_index ?? 0,
+    })
+    if (error) {
+      console.error('準備項目の復元エラー:', error)
+      notifyFailure('元に戻せませんでした。通信環境を確認してください。')
+    }
+    await fetchTrips()
   }
 
   function openNewTrip() {
@@ -499,6 +527,8 @@ export default function TravelPage() {
         <Toast
           message={toast.message}
           variant={toast.variant}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
           onClose={() => setToast(null)}
         />
       )}
@@ -512,6 +542,15 @@ function TripCard({ trip, activities, prepItems, onClick }) {
   const phase = tripPhase(trip)
   const donePrep = prepItems.filter(item => item.done).length
   const doneActivities = activities.filter(a => a.done).length
+  const dayDates = tripDates(trip.start_date, trip.end_date)
+  const currentDay = dayDates.indexOf(todayStr()) + 1
+  const untilStart = daysUntil(trip.start_date)
+  // 出発前は残り日数、旅行中は何日目か、終わった旅行は日数を出す
+  const countdown = untilStart != null
+    ? `あと${untilStart}日`
+    : currentDay > 0
+      ? `${currentDay}日目 / ${dayDates.length}日`
+      : `${dayDates.length}日間`
 
   return (
     <div className={styles.card} onClick={onClick} role="button" tabIndex={0}
@@ -526,6 +565,7 @@ function TripCard({ trip, activities, prepItems, onClick }) {
       <div className={styles.cardTitle}>{trip.title}</div>
       <div className={styles.cardMeta}>
         <span className={styles.phaseChip} data-phase={phase}>{PHASES[phase].label}</span>
+        <span className={styles.countdownChip}>{countdown}</span>
         <span className={styles.metaChip}>行程 {doneActivities}/{activities.length}</span>
         <span className={styles.metaChip}>準備 {donePrep}/{prepItems.length}</span>
       </div>

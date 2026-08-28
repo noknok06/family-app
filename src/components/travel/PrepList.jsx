@@ -8,11 +8,12 @@ import styles from './Travel.module.css'
  *
  * props:
  *   items    : travel_prep_items の配列（この旅行の分だけ）
+ *   members  : 家族メンバー（担当の選択肢。空なら自由入力にフォールバック）
  *   onAdd    : ({ category, title, assignee }) => Promise
  *   onToggle : (item) => void
  *   onDelete : (item) => void
  */
-export default function PrepList({ items, onAdd, onToggle, onDelete }) {
+export default function PrepList({ items, members = [], onAdd, onToggle, onDelete }) {
   const [category, setCategory] = useState('packing')
   const [title, setTitle] = useState('')
   const [assignee, setAssignee] = useState('')
@@ -53,6 +54,56 @@ export default function PrepList({ items, onAdd, onToggle, onDelete }) {
         </div>
       </div>
 
+      <div className={styles.addForm}>
+        <div className={styles.segment}>
+          {PREP_CATEGORIES.map(cat => (
+            <button
+              key={cat.key}
+              type="button"
+              className={styles.segmentBtn}
+              aria-pressed={category === cat.key}
+              onClick={() => setCategory(cat.key)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder={category === 'packing' ? '例：充電器' : '例：レンタカーを予約する'}
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+        />
+        <div className={styles.inlineRow}>
+          {members.length > 0 ? (
+            <select
+              className={styles.select}
+              aria-label="担当"
+              value={assignee}
+              onChange={e => setAssignee(e.target.value)}
+            >
+              <option value="">担当なし</option>
+              {members.map(member => (
+                <option key={member.id} value={member.name}>{member.name || 'メンバー'}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              className={styles.input}
+              placeholder="担当（任意）"
+              value={assignee}
+              onChange={e => setAssignee(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+            />
+          )}
+          <button type="button" className={styles.addBtn} onClick={handleAdd}>追加</button>
+        </div>
+        {error && <p className={styles.error} role="alert">{error}</p>}
+      </div>
+
       {groups.map(group => (
         <div key={group.key} className={styles.prepGroup}>
           <h4 className={styles.groupTitle}>
@@ -86,42 +137,6 @@ export default function PrepList({ items, onAdd, onToggle, onDelete }) {
           ))}
         </div>
       ))}
-
-      <div className={styles.addForm}>
-        <div className={styles.segment}>
-          {PREP_CATEGORIES.map(cat => (
-            <button
-              key={cat.key}
-              type="button"
-              className={styles.segmentBtn}
-              aria-pressed={category === cat.key}
-              onClick={() => setCategory(cat.key)}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-        <input
-          type="text"
-          className={styles.input}
-          placeholder={category === 'packing' ? '例：充電器' : '例：レンタカーを予約する'}
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-        />
-        <div className={styles.inlineRow}>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="担当（任意）"
-            value={assignee}
-            onChange={e => setAssignee(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-          />
-          <button type="button" className={styles.addBtn} onClick={handleAdd}>追加</button>
-        </div>
-        {error && <p className={styles.error} role="alert">{error}</p>}
-      </div>
     </div>
   )
 }

@@ -40,6 +40,15 @@ export default function TripFormModal({ trip, members = [], onSave, onClose }) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
+  /** 日帰り・1 泊が多いので、終了日が未入力・開始日より前なら開始日にそろえる */
+  function updateStartDate(value) {
+    setForm(prev => ({
+      ...prev,
+      start_date: value,
+      end_date: !prev.end_date || prev.end_date < value ? value : prev.end_date,
+    }))
+  }
+
   function toggleMember(id) {
     setForm(prev => ({
       ...prev,
@@ -103,7 +112,7 @@ export default function TripFormModal({ trip, members = [], onSave, onClose }) {
               type="date"
               className={styles.input}
               value={form.start_date}
-              onChange={e => update('start_date', e.target.value)}
+              onChange={e => updateStartDate(e.target.value)}
             />
           </div>
           <div>
@@ -112,6 +121,7 @@ export default function TripFormModal({ trip, members = [], onSave, onClose }) {
               id="trip-end"
               type="date"
               className={styles.input}
+              min={form.start_date || undefined}
               value={form.end_date}
               onChange={e => update('end_date', e.target.value)}
             />

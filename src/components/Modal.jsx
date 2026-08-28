@@ -38,6 +38,23 @@ function useVisualViewport(overlayRef, open) {
 }
 
 /**
+ * sheet のヘッダーは sticky なので、その下に別の要素を貼り付けたいページのために
+ * 実測した高さを CSS 変数（--modal-header-h）としてパネルに公開する。
+ */
+function useHeaderHeight(panelRef, headerRef, open) {
+  useEffect(() => {
+    const panel = panelRef.current
+    const header = headerRef.current
+    if (!open || !panel || !header) return
+    const observer = new ResizeObserver(() => {
+      panel.style.setProperty('--modal-header-h', `${header.offsetHeight}px`)
+    })
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [panelRef, headerRef, open])
+}
+
+/**
  * 全ページ共通のモーダル（モバイルはボトムシート、480px 以上で中央表示）。
  * Esc・背景タップで閉じる / 開いている間の背景スクロールロック /
  * フォーカストラップ・閉じた後のフォーカス復帰をここで一元的に担保する。
@@ -66,9 +83,11 @@ export default function Modal({
 }) {
   const panelRef = useRef(null)
   const overlayRef = useRef(null)
+  const headerRef = useRef(null)
   const titleId = useId()
 
   useVisualViewport(overlayRef, open)
+  useHeaderHeight(panelRef, headerRef, open)
 
   // onClose は呼び出し側でインライン関数になりがちなので、
   // 依存に含めて毎レンダー登録し直さないよう ref 経由で参照する
@@ -142,7 +161,7 @@ export default function Modal({
         tabIndex={-1}
       >
         {title && (
-          <div className={styles.header}>
+          <div className={styles.header} ref={headerRef}>
             {headerStart}
             <h2 className={styles.title} id={titleId}>{title}</h2>
             <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="閉じる">

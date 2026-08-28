@@ -227,6 +227,7 @@
 }
 
 .phaseChip,
+.countdownChip,
 .metaChip {
   padding: 0.15rem 0.6rem;
   border-radius: var(--radius-full);
@@ -248,6 +249,14 @@
 .metaChip {
   background: var(--surface-2);
   color: var(--ink-2);
+}
+
+/* 出発までの残り日数 / 旅行中は何日目か */
+.countdownChip {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ヘッダータイトル横のアイコン */
