@@ -3,6 +3,7 @@ import {
   IconReview, IconExternal,
 } from '../../lib/icons'
 import Modal from '../Modal'
+import PlacePhoto from './PlacePhoto'
 import styles from './PlaceDetailModal.module.css'
 
 function Stars({ value = 0, max = 5 }) {
@@ -35,6 +36,15 @@ export default function PlaceDetailModal({
   return (
     <Modal open onClose={onClose} title="場所の詳細">
       <div className={styles.body}>
+        <PlacePhoto
+          variant="detail"
+          name={place.name}
+          address={place.address}
+          lat={place.lat}
+          lng={place.lng}
+          Icon={CategoryIcon}
+        />
+
         <div className={styles.badges}>
           <span className={styles.categoryBadge}><CategoryIcon /> {category.label}</span>
           {subcategoryLabel && <span className={styles.subBadge}>{subcategoryLabel}</span>}

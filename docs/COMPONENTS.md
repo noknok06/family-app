@@ -29,6 +29,7 @@
 | `schedule/*` | 予定表の画面部品（月 / 週 / アジェンダ・各モーダル） | SchedulePage |
 | `travel/*` | 旅行の画面部品（詳細モーダル・行程リスト・準備リスト・各フォーム・地図パネル） | TravelPage |
 | `places/PlaceDetailModal` | お出かけリストの場所詳細（読み取り専用）。地図 / Web検索 / 訪問記録 / 編集への導線 | PlacesPage |
+| `places/PlacePhoto` | 場所の参考画像（Google の場所写真を名前・住所から取得）。一覧カードは画面に入ってから取得 | PlacesPage, PlaceDetailModal |
 | `AddToShoppingListModal` | 他アプリから買い物リストへ品物を送る | PricePage / DishesPage |
 | `VideoEmbed` | 動画（YouTube / TikTok）のサムネイル表示と、その場での埋め込み再生。再生状態は親が持つ | DishesPage |
 | `PlaceSearchInput` | Google Places の場所検索入力欄（デバウンス・呼び出し上限つき。候補リストはポータル表示で呼び出し側のレイアウトを崩さない） | PlacesPage / 旅行の宿泊先 |
