@@ -136,3 +136,28 @@ useEffect(() => {
 - API キーに HTTP リファラー制限と API 制限（Maps JavaScript API / Places API のみ）をかける
 - 「割り当て」で Places API の 1 日あたりリクエスト上限を設定する（真のハードリミット）
 - 請求先アカウントに予算アラートを設定する
+
+
+## 場所の参考画像（Google の場所写真）
+
+お出かけリストの参考画像は `utils/placePhotos.js` の `getPlacePhoto({ name, address })` で取得し、
+`components/places/PlacePhoto` が表示する。画像はユーザーに登録させず、写真をアプリ側に保存もしない
+（Google Maps Platform の規約で場所データの長期キャッシュが禁止されているため）。
+
+処理は「新 Places API の Text Search（`Place.searchByText`）で名前 + 住所から 1 件引き、その場所の
+写真 1 枚の URL を使う」だけ。無料枠は Text Search（Pro SKU）が **月 5,000 コール**、
+Place Photos（Essentials SKU）が **月 10,000 コール**で、次の制限をかけている。
+
+| 制限 | 既定値 | 目的 |
+|---|---|---|
+| 取得タイミング | 画面に入ってから | 一覧を開いただけで全件取得しない（IntersectionObserver） |
+| 結果のキャッシュ | 7 日（見つからない場合は 3 日） | 同じ場所を何度も引かない。写真 URL には期限があるため長く持たない |
+| 同時リクエストの集約 | 同じ場所は 1 本 | 一覧と詳細を同時に開いても 1 回 |
+| 1 日の上限 | 60 リクエスト | 端末ごと（localStorage 記録） |
+| 1 か月の上限 | 500 リクエスト | 無料枠の 10%。上限到達後は画像を出さずプレースホルダー表示 |
+
+**Google Cloud Console 側の準備**: API キーの API 制限に **Places API (New)** を追加する
+（未有効だと取得に失敗し、画像なしの表示にフォールバックする）。割り当て・予算アラートは
+Autocomplete と同じ考え方で設定する。
+
+Google の場所写真は帰属表示が必要なため、`PlacePhoto` は画像右下に提供元（Google / 撮影者名）を出す。

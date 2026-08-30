@@ -21,6 +21,7 @@ import ErrorNotice from '../components/ErrorNotice'
 import Toast from '../components/Toast'
 import Modal from '../components/Modal'
 import PlaceDetailModal from '../components/places/PlaceDetailModal'
+import PlacePhoto from '../components/places/PlacePhoto'
 import PlaceSearchInput from '../components/PlaceSearchInput'
 import styles from './PlacesPage.module.css'
 
@@ -822,6 +823,8 @@ function PlaceCard({ place, onOpenDetail, onVisit, onSearchTitle }) {
 
   return (
     <li className={`${styles.card} ${isVisited ? styles.cardVisited : ''}`} onClick={onOpenDetail}>
+      <PlacePhoto name={place.name} address={place.address} lat={place.lat} lng={place.lng} Icon={cat.icon} />
+
       <div className={styles.cardTop}>
         <span className={styles.categoryBadge}><cat.icon /> {cat.label}</span>
         {place._distanceKm != null && (

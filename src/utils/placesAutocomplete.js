@@ -1,4 +1,5 @@
 import { loadGoogleMapsScript } from './googleMaps'
+import { createUsageLimit } from './apiUsageLimit'
 
 /**
  * Google Places Autocomplete の呼び出しを無料枠に収めるための制限と共通処理。
@@ -21,51 +22,14 @@ export const PLACES_LIMITS = {
   debounceMs: 450,
 }
 
-const STORAGE_KEY = 'places-autocomplete-usage'
-
-function periodKeys() {
-  const now = new Date()
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  return { month, day: `${month}-${String(now.getDate()).padStart(2, '0')}` }
-}
-
-function readUsage() {
-  const { month, day } = periodKeys()
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-    return {
-      month,
-      day,
-      monthCount: saved.month === month ? (saved.monthCount ?? 0) : 0,
-      dayCount: saved.day === day ? (saved.dayCount ?? 0) : 0,
-    }
-  } catch {
-    return { month, day, monthCount: 0, dayCount: 0 }
-  }
-}
+const usageLimit = createUsageLimit({
+  storageKey: 'places-autocomplete-usage',
+  monthly: PLACES_LIMITS.monthly,
+  daily: PLACES_LIMITS.daily,
+})
 
 /** 現在の使用状況（設定画面や動作確認用にも読める形で返す） */
-export function placesQuota() {
-  const usage = readUsage()
-  return {
-    ...usage,
-    monthlyLimit: PLACES_LIMITS.monthly,
-    dailyLimit: PLACES_LIMITS.daily,
-    exhausted: usage.monthCount >= PLACES_LIMITS.monthly || usage.dayCount >= PLACES_LIMITS.daily,
-  }
-}
-
-function recordRequest() {
-  const usage = readUsage()
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      month: usage.month,
-      day: usage.day,
-      monthCount: usage.monthCount + 1,
-      dayCount: usage.dayCount + 1,
-    }))
-  } catch { /* localStorage が使えない環境でも検索自体は動かす */ }
-}
+export const placesQuota = usageLimit.quota
 
 /**
  * 入力欄 1 つ分の検索クライアント。
@@ -93,7 +57,7 @@ export function createPlacesSearch() {
     if (placesQuota().exhausted) return { predictions: [], reason: 'limit' }
 
     await ensureServices()
-    recordRequest()
+    usageLimit.record()
     const predictions = await new Promise(resolve => {
       autocompleteService.getPlacePredictions(
         {
@@ -111,7 +75,7 @@ export function createPlacesSearch() {
 
   async function details(placeId) {
     await ensureServices()
-    recordRequest()
+    usageLimit.record()
     const place = await new Promise(resolve => {
       placesService.getDetails(
         { placeId, sessionToken, fields: ['name', 'formatted_address', 'geometry'] },
