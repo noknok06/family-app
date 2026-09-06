@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BsHouseFill } from 'react-icons/bs'
 import { IconShopping, IconBell } from '../lib/icons'
@@ -98,6 +98,10 @@ export default function ShoppingPage() {
     }
   }
 
+  const handleCountChange = useCallback((listId, count) => {
+    setLists(prev => prev.map(list => list.id === listId ? { ...list, uncheckedCount: count } : list))
+  }, [setLists])
+
   const selectedList = lists.find(l => l.id === selectedListId)
 
   return (
@@ -125,17 +129,12 @@ export default function ShoppingPage() {
                   key={l.id}
                   className={`${styles.tab} ${l.id === selectedListId ? styles.tabActive : ''}`}
                   onClick={() => setSelectedListId(l.id)}
+                  aria-pressed={l.id === selectedListId}
                 >
                   <span className={styles.tabName}>{l.name}</span>
                   {l.uncheckedCount > 0 && (
                     <span className={styles.tabBadge}>{l.uncheckedCount}</span>
                   )}
-                  <span
-                    className={styles.tabDelete}
-                    onClick={e => { e.stopPropagation(); setConfirmDeleteList(l) }}
-                    role="button"
-                    aria-label={`${l.name}を削除`}
-                  >×</span>
                 </button>
               ))}
               <button className={styles.tabNew} onClick={() => setShowCreate(true)}>
@@ -151,6 +150,9 @@ export default function ShoppingPage() {
             <ErrorNotice onRetry={fetchLists} />
           ) : selectedListId ? (
             <ShoppingItemList
+              key={selectedListId}
+              onCountChange={handleCountChange}
+              onDeleteList={() => setConfirmDeleteList(selectedList)}
               listId={selectedListId}
               listName={selectedList?.name}
               memberName={familyMember?.name || familyMember?.email || '名前なし'}

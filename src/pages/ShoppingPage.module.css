@@ -172,48 +172,6 @@
   color: white;
 }
 
-.tabDelete {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  font-size: 0.9rem;
-  line-height: 1;
-  transition: all 0.15s ease;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-/* 見た目は小さめのまま、当たり判定を約44pxまで拡張して誤タップと押し損ねを防ぐ */
-.tabDelete::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  transform: translate(-50%, -50%);
-}
-
-.tab:not(.tabActive) .tabDelete {
-  color: var(--gray-400);
-}
-
-.tabDelete:hover {
-  background: rgba(0, 0, 0, 0.15);
-  color: white;
-}
-
-.tab:not(.tabActive) .tabDelete:hover {
-  background: color-mix(in srgb, var(--danger) 22%, transparent);
-  color: var(--danger);
-}
-
 .tabNew {
   flex-shrink: 0;
   padding: 0.4rem 0.875rem;
@@ -442,4 +400,18 @@
   .headerTitle {
     font-size: 0.95rem;
   }
+}
+
+/* Quiet surfaces make the selected list and the primary action stand out. */
+.tab { min-height: 44px; padding: 0.5rem 1rem; gap: 0.625rem; border-width: 1px; }
+.tab.tabActive { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.tab.tabActive .tabBadge { color: var(--on-primary); }
+.tabNew { min-height: 44px; color: var(--ink-2); }
+.tabsScroll { padding: 3px; }
+.content { padding: 1.25rem 1rem 0; }
+.page button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+@media (min-width: 1024px) {
+  .content { padding: 1.75rem 2rem 0; }
+  .tabsBar { padding-top: 1.75rem; }
+  .tabName { max-width: 150px; }
 }

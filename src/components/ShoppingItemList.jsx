@@ -9,13 +9,17 @@ import styles from './ShoppingItemList.module.css'
 const ITEMS_PAGE_SIZE = 10
 const HISTORY_PAGE_SIZE = 20
 
-export default function ShoppingItemList({ listId, listName, memberName, isFavorite, onToggleFavorite }) {
+export default function ShoppingItemList({ listId, listName, memberName, isFavorite, onToggleFavorite, onDeleteList, onCountChange }) {
   const [items, setItems] = useState([])
   const [checkedItems, setCheckedItems] = useState([])
   const [showHistory, setShowHistory] = useState(false)
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [memo, setMemo] = useState('')
+  const [showMemo, setShowMemo] = useState(false)
+  const [itemCount, setItemCount] = useState(0)
+  const [loadError, setLoadError] = useState(false)
+  const nameInputRef = useRef(null)
   const [submitting, setSubmitting] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [confirmClearHistory, setConfirmClearHistory] = useState(false)
@@ -32,19 +36,22 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
   const [loadingMoreHistory, setLoadingMoreHistory] = useState(false)
 
   const fetchItems = useCallback(async (limit) => {
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('shopping_items')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('list_id', listId)
       .eq('checked', false)
       .order('important', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit + 1)
+    setLoadError(!!error)
     if (!error && data) {
+      setItemCount(count ?? data.length)
+      onCountChange?.(listId, count ?? data.length)
       setHasMoreItems(data.length > limit)
       setItems(data.slice(0, limit))
     }
-  }, [listId])
+  }, [listId, onCountChange])
 
   const fetchHistory = useCallback(async (limit) => {
     const { data, error } = await supabase
@@ -128,7 +135,7 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
   async function handleAdd(e) {
     e.preventDefault()
     const trimmedName = name.trim()
-    if (!trimmedName) return
+    if (!trimmedName || submitting) return
     const isDuplicate = items.some(i => i.name.trim().toLowerCase() === trimmedName.toLowerCase())
     if (isDuplicate) {
       setToast({ message: `「${trimmedName}」はすでにリストにあります`, variant: 'error' })
@@ -136,8 +143,7 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
     }
     const trimmedMemo = memo.trim()
     setSubmitting(true)
-    setName('')
-    setMemo('')
+
 
     // 楽観的追加: 重要フラグ付きアイテムの後ろ・未購入リストの先頭に挿入
     const tempId = `temp-${Date.now()}`
@@ -175,8 +181,13 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
       setToast({ message: '追加に失敗しました。通信環境を確認してください。', variant: 'error' })
     } else {
       setItems(prev => prev.map(i => i.id === tempId ? data : i))
+      setName('')
+      setMemo('')
+      setShowMemo(false)
+      await fetchItems(itemsLimitRef.current)
     }
     setSubmitting(false)
+    nameInputRef.current?.focus()
   }
 
   async function handleToggle(item) {
@@ -193,16 +204,22 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
       setCheckedItems(prev => prev.filter(i => i.id !== item.id))
       fetchItems(itemsLimitRef.current)
     }
-    await supabase
+    const { error } = await supabase
       .from('shopping_items')
       .update({ checked, checked_at })
       .eq('id', item.id)
+    if (error) setToast({ message: '購入状態を更新できませんでした。もう一度お試しください。', variant: 'error' })
+    await fetchItems(itemsLimitRef.current)
+    if (showHistory) await fetchHistory(historyLimitRef.current)
   }
 
   async function handleDelete(id) {
     setItems(prev => prev.filter(i => i.id !== id))
     setCheckedItems(prev => prev.filter(i => i.id !== id))
-    await supabase.from('shopping_items').delete().eq('id', id)
+    const { error } = await supabase.from('shopping_items').delete().eq('id', id)
+    if (error) setToast({ message: '削除できませんでした。もう一度お試しください。', variant: 'error' })
+    await fetchItems(itemsLimitRef.current)
+    if (showHistory) await fetchHistory(historyLimitRef.current)
   }
 
   async function handleToggleImportant(item) {
@@ -270,14 +287,23 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
   return (
     <div className={styles.container}>
       <div className={styles.titleRow}>
-        <h2 className={styles.listTitle}>{listName}</h2>
+        <div className={styles.titleGroup}>
+          <span className={styles.eyebrow}>家族で共有する買い物</span>
+          <h2 className={styles.listTitle}>{listName}</h2>
+        </div>
         <button
           className={`${styles.favBtn} ${isFavorite ? styles.favOn : ''}`}
           onClick={onToggleFavorite}
+          aria-pressed={!!isFavorite}
           aria-label={isFavorite ? 'お気に入りを外す' : 'お気に入りに追加'}
         >
           {isFavorite ? <IconStarFill /> : <IconStar />}
         </button>
+        {onDeleteList && <button className={styles.listDeleteBtn} onClick={onDeleteList}>リスト削除</button>}
+      </div>
+      <div className={styles.summaryRow}>
+        <span>これから買う <strong>{loading || loadError ? '—' : itemCount}</strong> 点</span>
+        <span className={styles.summaryHint}>チェックで購入済みに</span>
       </div>
 
       {loading ? (
@@ -290,8 +316,14 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
         </div>
       ) : (
         <div className={styles.itemsArea}>
-          {items.length === 0 && !showHistory && (
-            <p className={styles.hint}>アイテムがありません。最初の商品を追加してみましょう！</p>
+          {loadError ? (
+            <div className={styles.hint}>商品を読み込めませんでした。<button className={styles.loadMoreBtn} onClick={() => fetchItems(itemsLimitRef.current)}>再読み込み</button></div>
+          ) : items.length === 0 && (
+            <div className={styles.emptyState}>
+              <span className={styles.emptyIcon}><IconCheck /></span>
+              <strong>買うものはありません</strong>
+              <p>必要なものを下の入力欄から追加しましょう。</p>
+            </div>
           )}
           {items.length > 0 && (
             <>
@@ -324,6 +356,7 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
             <button
               className={styles.historyToggle}
               onClick={() => setShowHistory(prev => !prev)}
+              aria-expanded={showHistory}
             >
               <span className={styles.historyToggleIcon}>{showHistory ? '▲' : '▼'}</span>
               購入済み履歴
@@ -374,7 +407,7 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
 
       <form onSubmit={handleAdd} className={styles.addForm}>
         {nameFocused && suggestions.length > 0 && (
-          <div className={styles.suggestions} role="listbox" aria-label="よく買う商品の候補">
+          <div className={styles.suggestions} role="group" aria-label="よく買う商品の候補">
             {suggestions.map(s => (
               <button
                 key={s}
@@ -390,27 +423,36 @@ export default function ShoppingItemList({ listId, listName, memberName, isFavor
         )}
         <div className={styles.inputRow}>
           <input
+            ref={nameInputRef}
+            aria-label="商品名"
+            disabled={submitting}
             className={styles.nameInput}
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             onFocus={() => setNameFocused(true)}
             onBlur={() => setNameFocused(false)}
-            placeholder="商品名を入力..."
+            placeholder="買うものを追加（例：牛乳）"
             maxLength={100}
           />
-          <input
+          <button type="submit" className={styles.addBtn} disabled={submitting || !name.trim()}>
+            {submitting ? '追加中…' : '＋ 追加'}
+          </button>
+        </div>
+        <button type="button" className={styles.memoToggle} aria-expanded={showMemo} onClick={() => setShowMemo(v => !v)}>
+          {showMemo ? '− メモを閉じる' : '＋ 数量・メモをつける'}
+        </button>
+        {showMemo && (          <input
+            aria-label="数量・メモ"
+            disabled={submitting}
             className={styles.memoInput}
             type="text"
             value={memo}
             onChange={e => setMemo(e.target.value)}
-            placeholder="メモ（任意）"
+            placeholder="数量・メモ（例：2本、いつもの）"
             maxLength={200}
           />
-          <button type="submit" className={styles.addBtn} disabled={submitting || !name.trim()}>
-            追加
-          </button>
-        </div>
+)}
       </form>
 
       {editingItem && (
@@ -514,7 +556,9 @@ function ItemRow({ item, onToggle, onDelete, onToggleImportant, onEdit }) {
         className={styles.deleteBgBtn}
         style={{ opacity: Math.min(Math.abs(offsetX) / REVEAL_WIDTH, 1) }}
         onClick={() => onDelete(item.id)}
-        aria-label="削除"
+        aria-label={`${item.name}を削除`}
+        tabIndex={revealed ? 0 : -1}
+        disabled={String(item.id).startsWith('temp-')}
       >
         削除
       </button>
@@ -533,7 +577,10 @@ function ItemRow({ item, onToggle, onDelete, onToggleImportant, onEdit }) {
         <button
           className={styles.checkbox}
           onClick={handleCheckboxClick}
-          aria-label={item.checked ? 'チェックを外す' : 'チェックする'}
+          role="checkbox"
+          aria-checked={item.checked}
+          disabled={String(item.id).startsWith('temp-')}
+          aria-label={`${item.name}を${item.checked ? '未購入に戻す' : '購入済みにする'}`}
         >
           {item.checked ? <IconCheck /> : ''}
         </button>
@@ -549,18 +596,21 @@ function ItemRow({ item, onToggle, onDelete, onToggleImportant, onEdit }) {
         <button
           className={styles.editItemBtn}
           onClick={e => { e.stopPropagation(); onEdit(item) }}
-          aria-label="編集"
+          disabled={String(item.id).startsWith('temp-')}
+          aria-label={`${item.name}を編集`}
         ><IconEdit /></button>
         {/* 重要フラグ */}
         <button
           className={`${styles.starBtn} ${item.important ? styles.starOn : ''}`}
           onClick={e => { e.stopPropagation(); onToggleImportant(item) }}
+          disabled={String(item.id).startsWith('temp-')}
+          aria-pressed={!!item.important}
           aria-label={item.important ? '重要フラグを外す' : '重要としてマーク'}
         >
           {item.important ? <IconStarFill /> : <IconStar />}
         </button>
         {/* デスクトップのみ × ボタン表示 */}
-        <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); onDelete(item.id) }} aria-label="削除">×</button>
+        <button disabled={String(item.id).startsWith('temp-')} className={styles.deleteBtn} onClick={e => { e.stopPropagation(); onDelete(item.id) }} aria-label="削除">×</button>
       </div>
     </li>
   )

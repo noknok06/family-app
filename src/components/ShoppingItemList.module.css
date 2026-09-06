@@ -548,100 +548,51 @@
   cursor: not-allowed;
 }
 
-/* ── デスクトップ ── */
-@media (min-width: 1024px) {
-  .listTitle {
-    font-size: 1.5rem;
-  }
-
-  /* 未購入・購入済みを横並び2カラム */
-  .itemsArea {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    align-items: start;
-    overflow-y: auto;
-  }
-
-  .checkedSection {
-    margin-top: 0;
-  }
-
-  /* 入力フォームを横並び */
-  .addForm {
-    padding-block: 1rem;
-  }
-}
-
-/* ── モバイル ── */
+/* A single reading column keeps history and pagination in document order. */
+.container { min-height: 0; }
+.titleRow { margin-bottom: 1rem; gap: 0.5rem; }
+.titleGroup { flex: 1; min-width: 0; }
+.eyebrow { display: block; color: var(--ink-2); font-size: 0.72rem; margin-bottom: 0.3rem; letter-spacing: 0.08em; }
+.listTitle { background: none; -webkit-text-fill-color: currentColor; color: var(--ink); font-size: 1.5rem; }
+.listDeleteBtn { border: 0; background: transparent; color: var(--ink-2); font-size: 0.75rem; min-height: 44px; padding: 0 0.5rem; flex-shrink: 0; }
+.listDeleteBtn:hover { color: var(--danger); }
+.summaryRow { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-shrink: 0; padding: 0.875rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--ink-2); font-size: 0.82rem; }
+.summaryRow strong { font-size: 1.45rem; color: var(--primary); margin-inline: 0.3rem; font-variant-numeric: tabular-nums; }
+.summaryHint { font-size: 0.72rem; }
+.itemsArea { min-height: 0; padding-bottom: 1rem; scrollbar-gutter: stable; }
+.itemList { gap: 0.625rem; }
+.item { gap: 0.375rem; padding: 0.75rem 0.625rem; border-color: var(--border); box-shadow: none; }
+.item.itemImportant { padding-left: calc(0.625rem - 3px); }
+.itemName { white-space: normal; overflow-wrap: anywhere; font-size: 1rem; font-weight: 600; line-height: 1.5; }
+.itemMemo { white-space: normal; overflow-wrap: anywhere; color: var(--ink-2); line-height: 1.5; }
+.itemAdded { margin-top: 0.25rem; color: var(--ink-3); font-size: 0.68rem; }
+.checkbox { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 14px; margin-right: 0.375rem; }
+.favBtn, .starBtn, .editItemBtn { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; }
+.starBtn:hover, .favBtn:hover { transform: none; }
+.deleteBtn { opacity: 1; width: 32px; min-height: 44px; }
+.historyHeader { border-top: 1px solid var(--border); margin-top: 0.875rem; padding-top: 0.375rem; }
+.historyToggle, .clearHistoryBtn { min-height: 44px; margin-top: 0; }
+.historyToggle { color: var(--ink-2); font-size: 0.82rem; letter-spacing: 0; }
+.historySection { border: none; }
+.emptyState { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2.5rem 1rem; text-align: center; color: var(--ink); }
+.emptyState p { color: var(--ink-2); font-size: 0.82rem; line-height: 1.7; }
+.emptyIcon { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--primary); font-size: 1.5rem; }
+.addForm { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.75rem; margin: 0.5rem 0 0.75rem; box-shadow: var(--shadow-md); }
+.inputRow { display: flex; gap: 0.5rem; }
+.nameInput { min-width: 0; flex: 1; width: 100%; font-size: 16px; padding: 0.75rem; background: var(--bg); }
+.addBtn { padding-inline: 1rem; background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.memoToggle { display: block; min-height: 36px; padding: 0.25rem; border: none; background: transparent; color: var(--ink-2); font-size: 0.75rem; }
+.memoInput { width: 100%; min-width: 0; font-size: 16px; }
+.container button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.container button:disabled { cursor: not-allowed; opacity: 0.5; }
 @media (max-width: 600px) {
-  /* 2段レイアウト:
-     [商品名（全幅）]
-     [メモ] [追加]       */
-  .inputRow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    align-items: stretch;
-  }
-
-  .nameInput {
-    flex: 0 0 100%;     /* 1段目: 全幅 */
-    min-width: 0;
-    order: 1;
-  }
-
-  .memoInput {
-    flex: 1;            /* 2段目: 残りの幅 */
-    min-width: 0;
-    order: 2;
-  }
-
-  .addBtn {
-    flex-shrink: 0;
-    padding: 0.75rem 1.125rem;
-    order: 3;           /* 2段目: メモの右 */
-  }
-
-  /* スワイプで削除するのでモバイルは × 非表示 */
-  .deleteBtn {
-    display: none;
-  }
-
-  /* チェックボックスのタップ領域を拡大 */
-  .checkbox {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-  }
+  .deleteBtn { display: none; }
+  .listTitle { font-size: 1.25rem; }
 }
-
-/* ── タップ領域の確保（見た目は変えない） ──
-   指で押せる範囲を 44px 以上にする。行内に並ぶ要素は縦だけ広げる
-   （横に広げると隣の要素の領域を奪うため）。 */
-.favBtn,
-.starBtn,
-.editItemBtn,
-.checkbox {
-  position: relative;
+@media (max-width: 360px) {
+  .summaryHint { display: none; }
+  .listDeleteBtn { font-size: 0.68rem; }
 }
-
-.favBtn::after,
-.starBtn::after,
-.editItemBtn::after,
-.checkbox::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: max(100%, 44px);
-  height: max(100%, 44px);
-  transform: translate(-50%, -50%);
-}
-
-@media (max-width: 430px) {
-  .listTitle {
-    font-size: 1.05rem;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .container *, .container *::before, .container *::after { animation: none; transition: none; }
 }
